@@ -8,3 +8,5 @@ license = "Apache-2.0"
 
 [dependencies]
 clap = { version = "3.2.23", features = ["derive"] }
+rand = "0.8.5"
+ctrlc = "3.2.3"
