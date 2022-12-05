@@ -2,13 +2,15 @@
  * @Author: Image image@by.cx
  * @Date: 2022-12-05 22:39:47
  * @LastEditors: Image image@by.cx
- * @LastEditTime: 2022-12-05 22:47:35
- * @FilePath: /lookbusy-rs/src/README.MD
+ * @LastEditTime: 2022-12-05 22:58:43
+ * @FilePath: /lookbusy-rs/README.MD
  * @Description: 
  * 
  * Copyright (c) 2022 by Image image@by.cx, All Rights Reserved. 
 -->
 # Lookbusy - make your PC looks busy
+
+[crates.io](https://crates.io/crates/lookbusy)![Crates.io](https://img.shields.io/crates/l/lookbusy)![Crates.io](https://img.shields.io/crates/v/lookbusy)![Crates.io](https://img.shields.io/crates/d/lookbusy)
 
 This is a program can be set to eat you cpu and memory resource.
 
