@@ -1,14 +1,15 @@
 /*
  * @Author: Image image@by.cx
  * @Date: 2022-12-05 21:40:45
- * @LastEditors: Image image@by.cx
- * @LastEditTime: 2022-12-05 22:35:29
+ * @LastEditors: Image_woker_pc image@by.cx
+ * @LastEditTime: 2022-12-07 10:50:01
  * @FilePath: /lookbusy-rs/src/main.rs
  * @Description: 
  * 
  * Copyright (c) 2022 by Image image@by.cx, All Rights Reserved. 
  */
 use std::thread::{self, JoinHandle};
+use std::time::{Duration, SystemTime};
 use ctrlc;
 use clap::Parser;
 use rand::Rng;
@@ -26,6 +27,10 @@ fn cpu_busy(cpu_num:u64){
     for _i in 0..cpu_num{
         let handle = thread::spawn(|| {
             loop{
+                let durations = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
+                if durations.as_millis() % 1000 > 500{
+                    thread::sleep(Duration::from_millis(500));
+                }
                 _ = 2 * 11;
             };
         });
