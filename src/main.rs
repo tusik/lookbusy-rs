@@ -2,7 +2,7 @@
  * @Author: Image image@by.cx
  * @Date: 2022-12-05 21:40:45
  * @LastEditors: Image image@by.cx
- * @LastEditTime: 2022-12-07 22:19:35
+ * @LastEditTime: 2022-12-07 22:38:36
  * @FilePath: /lookbusy-rs/src/main.rs
  * @Description: 
  * 
@@ -12,7 +12,6 @@ use std::thread::{self, JoinHandle};
 use std::time::{Duration, SystemTime};
 use ctrlc;
 use clap::Parser;
-use rand::Rng;
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 pub struct Args{
@@ -46,12 +45,13 @@ fn cpu_busy(cpu_num:u64, limit:f32){
 }
 fn mem_busy(size_mb:u64){
     let target_size_bit = size_mb *1024 *1024 *8 /64;
-    for _i in 0..target_size_bit{
-        unsafe{
-            EAT_MEM.push(rand::thread_rng().gen());
-        }
-        
+    let start_durations = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
+    unsafe{
+        EAT_MEM.resize(target_size_bit.try_into().unwrap(), 1);
     }
+    let end_durations = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
+    let diff = end_durations - start_durations;
+    println!("{}",diff.as_millis());
 }
 fn print_info(args:&Args){
     println!("Process start.");
