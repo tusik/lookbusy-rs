@@ -2,7 +2,7 @@
  * @Author: Image image@by.cx
  * @Date: 2022-12-05 21:40:45
  * @LastEditors: Image image@by.cx
- * @LastEditTime: 2022-12-07 22:38:36
+ * @LastEditTime: 2022-12-11 22:20:03
  * @FilePath: /lookbusy-rs/src/main.rs
  * @Description: 
  * 
@@ -44,6 +44,7 @@ fn cpu_busy(cpu_num:u64, limit:f32){
     }
 }
 fn mem_busy(size_mb:u64){
+    println!("Start eat memory!!!");
     let target_size_bit = size_mb *1024 *1024 *8 /64;
     let start_durations = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
     unsafe{
@@ -51,7 +52,7 @@ fn mem_busy(size_mb:u64){
     }
     let end_durations = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
     let diff = end_durations - start_durations;
-    println!("{}",diff.as_millis());
+    println!("Eat memory takes {} seconds.",diff.as_millis());
 }
 fn print_info(args:&Args){
     println!("Process start.");
