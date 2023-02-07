@@ -1,8 +1,8 @@
 /*
  * @Author: Image image@by.cx
  * @Date: 2022-12-05 21:40:45
- * @LastEditors: Image_woker_pc image@by.cx
- * @LastEditTime: 2022-12-07 10:50:01
+ * @LastEditors: Image image@by.cx
+ * @LastEditTime: 2023-02-07 17:18:30
  * @FilePath: /lookbusy-rs/src/main.rs
  * @Description: 
  * 
@@ -13,6 +13,7 @@ use std::time::{Duration, SystemTime};
 use ctrlc;
 use clap::Parser;
 use rand::Rng;
+use sysinfo::{NetworkExt, NetworksExt, ProcessExt, System, SystemExt};
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 pub struct Args{
@@ -55,12 +56,17 @@ fn print_info(args:&Args){
     println!("Use Ctrl + C to stop.");
 }
 fn main() {
+    let sys = System::new_all();
     let args = Args::parse();
     print_info(&args);
     ctrlc::set_handler(||{
         println!("\nTask Finished! bye~");
         std::process::exit(0);        
     }).expect("Error setting Ctrl-C handler");
+    let free_mem = sys.total_memory() - sys.used_memory();
+    if free_mem <= args.mem_size * 1024 * 1024 {
+        println!("\nWarning! Free memory is less than require. It could cause system performance issue. ");
+    }
     mem_busy(args.mem_size);
     cpu_busy(args.cpu_num);
     unsafe{
