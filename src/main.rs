@@ -1,19 +1,20 @@
+
 /*
  * @Author: Image image@by.cx
  * @Date: 2022-12-05 21:40:45
  * @LastEditors: Image image@by.cx
- * @LastEditTime: 2023-02-07 17:21:44
+ * @LastEditTime: 2023-02-08 15:44:43
  * @FilePath: /lookbusy-rs/src/main.rs
  * @Description: 
  * 
  * Copyright (c) 2022 by Image image@by.cx, All Rights Reserved. 
  */
+use std::io::Write;
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, SystemTime};
 use ctrlc;
 use clap::Parser;
-use rand::Rng;
-use sysinfo::{NetworkExt, NetworksExt, ProcessExt, System, SystemExt};
+use sysinfo::{System, SystemExt};
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 pub struct Args{
@@ -29,6 +30,7 @@ pub struct Args{
 }
 static mut HANDLES:Vec<JoinHandle<bool>> = vec![];
 static mut EAT_MEM:Vec<u64> = vec![];
+static STICK: [char; 4] = ['|','/','-','\\'];
 fn cpu_busy(cpu_num:u64, limit:f32){
     for _i in 0..cpu_num{
         let handle = thread::spawn(move || {
@@ -38,21 +40,45 @@ fn cpu_busy(cpu_num:u64, limit:f32){
                     thread::sleep(Duration::from_millis(10));
                 }
                 _ = 2 * 11;
+               
+                
             };
         });
         unsafe{
             HANDLES.push(handle);
         };
     }
+    let processing_handle = thread::spawn(move||{
+        let mut stick_itr = STICK.iter();
+        loop{
+            match stick_itr.next() {
+                Some(chr) => {
+                    print!("Running {} \r",chr);
+                    std::io::stdout().flush().expect("Error on message flush.");
+                },
+                None => {
+                    stick_itr = STICK.iter();
+                },
+            }
+            thread::sleep(Duration::from_millis(100));
+        }
+    });
+    unsafe{
+        HANDLES.push(processing_handle);
+    };
+    
 }
 fn mem_busy(size_mb:u64){
     let target_size_bit = size_mb *1024 *1024 *8 /64;
+    let start = SystemTime::now();
     for _i in 0..target_size_bit{
         unsafe{
-            EAT_MEM.push(rand::thread_rng().gen());
+            EAT_MEM.push(1);
         }
         
     }
+    let ms = SystemTime::now().duration_since(start).expect("error on get time");
+    println!("Mem worker initialize finished. {} ms",ms.as_millis());
 }
 fn print_info(args:&Args){
     println!("Process start.");
@@ -72,6 +98,7 @@ fn main() {
     if free_mem <= args.mem_size * 1024 * 1024 {
         println!("\nWarning! Free memory is less than require. It could cause system performance issue. ");
     }
+    println!("Initializing CPU/Mem worker");
     mem_busy(args.mem_size);
     cpu_busy(args.cpu_num,args.limit);
     unsafe{
