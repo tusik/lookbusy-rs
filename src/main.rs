@@ -1,18 +1,20 @@
-use std::mem::size_of;
 /*
  * @Author: Image image@by.cx
  * @Date: 2022-12-05 21:40:45
  * @LastEditors: Image image@by.cx
- * @LastEditTime: 2022-12-11 22:40:42
+ * @LastEditTime: 2023-03-20 16:45:50
  * @FilePath: /lookbusy-rs/src/main.rs
  * @Description: 
  * 
  * Copyright (c) 2022 by Image image@by.cx, All Rights Reserved. 
  */
+use std::io::Write;
+use std::mem::size_of;
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, SystemTime};
 use ctrlc;
 use clap::Parser;
+use sysinfo::{System, SystemExt};
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 pub struct Args{
@@ -27,7 +29,8 @@ pub struct Args{
     mem_size: u64,
 }
 static mut HANDLES:Vec<JoinHandle<bool>> = vec![];
-static mut EAT_MEM:Vec<u128> = Vec::new();
+static mut EAT_MEM:Vec<u128> = vec![];
+static STICK: [char; 4] = ['|','/','-','\\'];
 fn cpu_busy(cpu_num:u64, limit:f32){
     for _i in 0..cpu_num{
         let handle = thread::spawn(move || {
@@ -37,12 +40,33 @@ fn cpu_busy(cpu_num:u64, limit:f32){
                     thread::sleep(Duration::from_millis(10));
                 }
                 _ = 2 * 11;
+               
+                
             };
         });
         unsafe{
             HANDLES.push(handle);
         };
     }
+    let processing_handle = thread::spawn(move||{
+        let mut stick_itr = STICK.iter();
+        loop{
+            match stick_itr.next() {
+                Some(chr) => {
+                    print!("Running {} \r",chr);
+                    std::io::stdout().flush().expect("Error on message flush.");
+                },
+                None => {
+                    stick_itr = STICK.iter();
+                },
+            }
+            thread::sleep(Duration::from_millis(100));
+        }
+    });
+    unsafe{
+        HANDLES.push(processing_handle);
+    };
+    
 }
 fn mem_busy(size_mb:u64){
     println!("Start eat memory!!!");
@@ -50,7 +74,7 @@ fn mem_busy(size_mb:u64){
     let target_size_bit = size_mb *1024 *1024 *8 / (data_size * 8);
     let start_durations = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
     unsafe{
-        EAT_MEM.resize(target_size_bit.try_into().unwrap(), 0);
+        EAT_MEM.resize(target_size_bit.try_into().unwrap(), 1);
     }
     let end_durations = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
     let diff = end_durations - start_durations;
@@ -63,12 +87,18 @@ fn print_info(args:&Args){
     println!("Use Ctrl + C to stop.");
 }
 fn main() {
+    let sys = System::new_all();
     let args = Args::parse();
     print_info(&args);
     ctrlc::set_handler(||{
         println!("\nTask Finished! bye~");
         std::process::exit(0);        
     }).expect("Error setting Ctrl-C handler");
+    let free_mem = sys.total_memory() - sys.used_memory();
+    if free_mem <= args.mem_size * 1024 * 1024 {
+        println!("\nWarning! Free memory is less than require. It could cause system performance issue. ");
+    }
+    println!("Initializing CPU/Mem worker");
     mem_busy(args.mem_size);
     cpu_busy(args.cpu_num,args.limit);
     unsafe{

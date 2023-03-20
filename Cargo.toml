@@ -10,3 +10,4 @@ repository = "https://github.com/tusik/lookbusy-rs"
 [dependencies]
 clap = { version = "3.2.23", features = ["derive"] }
 ctrlc = "3.2.3"
+sysinfo = "0.27.7"
