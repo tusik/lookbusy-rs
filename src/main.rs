@@ -2,7 +2,7 @@
  * @Author: Image image@by.cx
  * @Date: 2022-12-05 21:40:45
  * @LastEditors: Image image@by.cx
- * @LastEditTime: 2023-03-22 14:05:43
+ * @LastEditTime: 2023-03-22 15:56:07
  * @FilePath: /lookbusy-rs/src/main.rs
  * @Description: 
  * 
@@ -45,16 +45,18 @@ where P: AsRef<Path>, {
 }
 
 fn display_log(log_path:&str){
-    if let Ok(lines) = read_lines(log_path) {
-        let disr = SkewNormal::new(20.0, 300.0, 0.5).unwrap();
-        let mut rng = thread_rng();
-        for line in lines {
-            if let Ok(ip) = line {
-                let num = disr.sample(&mut rng)as u64;
-                println!("{}", ip);
-                thread::sleep(Duration::from_millis(num));
-            }      
-        }   
+    loop {
+        if let Ok(lines) = read_lines(log_path) {
+            let disr = SkewNormal::new(20.0, 300.0, 0.5).unwrap();
+            let mut rng = thread_rng();
+            for line in lines {
+                if let Ok(ip) = line {
+                    let num = disr.sample(&mut rng)as u64;
+                    println!("{}", ip);
+                    thread::sleep(Duration::from_millis(num));
+                }      
+            }   
+        }
     }
 }
 fn cpu_busy(cpu_num:u64, limit:f32){
