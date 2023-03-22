@@ -16,6 +16,11 @@ This is a program can be set to eat you cpu and memory resource.
 
 You can controll how much cpu usage per single thread.
 
+![screenshot](example/example.gif)
+# Install
+```
+cargo install lookbusy
+```
 # How to use
 ```shell
 USAGE:
