@@ -1,48 +1,57 @@
-name: Rust
-
+name: release
 on:
   push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
-
-env:
-  CARGO_TERM_COLOR: always
+    tags:
+      - "v*"
 
 jobs:
-  build:
-
+  release:
+    name: Create Release
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v3
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
-
-  create-release:
-
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-      - uses: taiki-e/create-gh-release-action@v1
-        with:
-          changelog: CHANGELOG.md
+      - name: Checkout code
+        uses: actions/checkout@master
+      - name: Create Release
+        uses: actions/create-release@latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  upload-assets:
-
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-      - uses: taiki-e/upload-rust-binary-action@v1
         with:
-          # (required) Binary name (non-extension portion of filename) to build and upload.
-          bin: lookbusy
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+  publish:
+    name: publish ${{ matrix.name }}
+    needs:
+      - release
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - target: x86_64-pc-windows-gnu
+            suffix: windows-x86_64
+            archive: zip
+            name: x86_64-pc-windows-gnu
+          - target: x86_64-unknown-linux-gnu
+            suffix: linux-x86_64
+            archive: tar.xz
+            name: x86_64-unknown-linux-gnu
+          - target: x86_64-apple-darwin
+            suffix: darwin-x86_64
+            archive: tar.gz
+            name: x86_64-apple-darwin
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone test repository
+        uses: actions/checkout@v2
+      - uses: xhaiker/rust-release.action@v1.0.0
+        name: build ${{ matrix.name }}
+        with:
+          release: ${{ github.ref_name }}
+          rust_target: ${{ matrix.target }}
+          archive_suffix: ${{ matrix.suffix }}
+          archive_types: ${{ matrix.archive }}
+          extra_files: "README.md README_zh.md LICENSE"
         env:
-          # (required) GitHub token for uploading assets to GitHub Releases.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
