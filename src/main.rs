@@ -116,10 +116,8 @@ fn mem_busy(size_mb:u64){
     println!("Eat memory takes {} seconds.",diff.as_millis());
 }
 
-fn print_info(args:&Args){
+fn print_info(){
     println!("Process start.");
-    println!("Now I'm eat {:} cpu and {:} MB Memory.",
-        args.cpu_num, args.mem_size);
     println!("Use Ctrl + C to stop.");
 }
 
@@ -150,7 +148,7 @@ fn processing_display(log_path : Option<String>) -> JoinHandle<bool>{
 fn main() {
     let sys = System::new_all();
     let args = Args::parse();
-    print_info(&args);
+    print_info();
     ctrlc::set_handler(||{
         println!("\nTask Finished! bye~");
         std::process::exit(0);        
@@ -174,10 +172,13 @@ fn main() {
         }
     }
     if cpus.len() > 0{
-        cpu_busy_accurate(cpus);
+        cpu_busy_accurate(cpus.clone());
+        print!("Now I'm eat {:} cpu", &cpus.len());
     }else{
         cpu_busy(args.cpu_num,args.limit);
+        print!("Now I'm eat {:} cpu", args.cpu_num);
     }
+    println!(" and {:} MB Memory.", args.mem_size);
     let processing_handle = processing_display(args.log_path);
     unsafe{
         HANDLES.push(processing_handle);
