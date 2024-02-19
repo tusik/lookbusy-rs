@@ -3,6 +3,11 @@ on:
   release:
     types: [created]
 
+env:
+  CRATE_NAME: lookbusy
+  GITHUB_TOKEN: ${{ github.token }}
+  RUST_BACKTRACE: 1
+
 jobs:
   test:
     name: ${{ matrix.platform.os_name }} with rust ${{ matrix.toolchain }}
