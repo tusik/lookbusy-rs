@@ -15,7 +15,7 @@
 This is a program can be set to eat you cpu and memory resource.
 
 # feature
- - precise control cpu core usage 0,1;3,1;5,1 core0,3,5 use 100% cpu
+ - precise control cpu core usage 0/1,3/1,5/1 core0,3,5 use 100% cpu
  - fake log print
  - cpu usage per core
 
