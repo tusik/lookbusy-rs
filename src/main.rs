@@ -35,13 +35,13 @@ pub struct Args{
     #[clap(short='L', long)]
     log_path: Option<String>,
     /// precise control cpu core usage
-    /// 0,1;3,1;5,1 core0,3,5 use 100% cpu
+    /// 0/1,3/1,5/1 core0,3,5 use 100% cpu
     #[clap(short='C', long)]
     config: Option<String>
 }
 static mut HANDLES:Vec<JoinHandle<bool>> = vec![];
 static mut EAT_MEM:Vec<u128> = vec![];
-static STICK: [char; 4] = ['|','/','-','\\'];
+static STICK: [char; 3] = ['_','-','_'];
 fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
 where P: AsRef<Path>, {
     let file = File::open(filename)?;
@@ -113,7 +113,7 @@ fn mem_busy(size_mb:u64){
     }
     let end_durations = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
     let diff = end_durations - start_durations;
-    println!("Eat memory takes {} seconds.",diff.as_millis());
+    println!("Eat memory takes {} ms.",diff.as_millis());
 }
 
 fn print_info(){
@@ -162,10 +162,10 @@ fn main() {
     let mut cpus = Vec::new();
     if args.config.is_some(){
         let config = args.config.unwrap();
-        let parts:Vec<&str> = config.split(";").collect();
+        let parts:Vec<&str> = config.split(",").collect();
         for part in parts{
             let _part = part.trim();
-            let _part:Vec<&str> = _part.split(",").collect();
+            let _part:Vec<&str> = _part.split("/").collect();
             let core = _part[0].parse::<u32>().unwrap();
             let limit = _part[1].parse::<f32>().unwrap();
             cpus.push((core,limit));
