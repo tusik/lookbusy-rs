@@ -24,7 +24,7 @@ use rand::thread_rng;
 pub struct Args{
     /// how many cpu thread you want use.
     #[clap(short, long, default_value_t=1)]
-    cpu_num: u64,
+    cpu_num: usize,
     /// cpu usage per thread %.
     #[clap(short, long, default_value_t=1.0)]
     limit: f32,
@@ -33,7 +33,11 @@ pub struct Args{
     mem_size: u64,
     /// fake log print.
     #[clap(short='L', long)]
-    log_path: Option<String>
+    log_path: Option<String>,
+    /// precise control cpu core usage
+    /// 0,1;3,1;5,1 core0,3,5 use 100% cpu
+    #[clap(short='C', long)]
+    config: Option<String>
 }
 static mut HANDLES:Vec<JoinHandle<bool>> = vec![];
 static mut EAT_MEM:Vec<u128> = vec![];
@@ -59,7 +63,7 @@ fn display_log(log_path:&str){
         }
     }
 }
-fn cpu_busy(cpu_num:u64, limit:f32){
+fn cpu_busy(cpu_num:usize, limit:f32){
     for _i in 0..cpu_num{
         let handle = thread::spawn(move || {
             loop{
@@ -67,9 +71,30 @@ fn cpu_busy(cpu_num:u64, limit:f32){
                 if durations.as_millis() % 1000 > (limit * 1000.0) as u128{
                     thread::sleep(Duration::from_millis(10));
                 }
+                let _answer = 2 * 21;
+
+            };
+        });
+        unsafe{
+            HANDLES.push(handle);
+        };
+    }
+}
+
+fn cpu_busy_accurate(config:Vec<(u32,f32)>){
+    let core_ids = core_affinity::get_core_ids().unwrap();
+    for i in config{
+        let core = core_ids[i.0 as usize];
+        let handle = thread::spawn(move || {
+            core_affinity::set_for_current(core);
+            loop{
+                let durations = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
+                if durations.as_millis() % 1000 > (i.1 * 1000.0) as u128{
+                    thread::sleep(Duration::from_millis(10));
+                }
                 _ = 2 * 11;
-               
-                
+
+
             };
         });
         unsafe{
@@ -91,10 +116,8 @@ fn mem_busy(size_mb:u64){
     println!("Eat memory takes {} seconds.",diff.as_millis());
 }
 
-fn print_info(args:&Args){
+fn print_info(){
     println!("Process start.");
-    println!("Now I'm eat {:} cpu and {:} MB Memory.",
-        args.cpu_num, args.mem_size);
     println!("Use Ctrl + C to stop.");
 }
 
@@ -125,7 +148,7 @@ fn processing_display(log_path : Option<String>) -> JoinHandle<bool>{
 fn main() {
     let sys = System::new_all();
     let args = Args::parse();
-    print_info(&args);
+    print_info();
     ctrlc::set_handler(||{
         println!("\nTask Finished! bye~");
         std::process::exit(0);        
@@ -136,14 +159,33 @@ fn main() {
     }
     println!("Initializing CPU/Mem worker");
     mem_busy(args.mem_size);
-    cpu_busy(args.cpu_num,args.limit);
+    let mut cpus = Vec::new();
+    if args.config.is_some(){
+        let config = args.config.unwrap();
+        let parts:Vec<&str> = config.split(";").collect();
+        for part in parts{
+            let _part = part.trim();
+            let _part:Vec<&str> = _part.split(",").collect();
+            let core = _part[0].parse::<u32>().unwrap();
+            let limit = _part[1].parse::<f32>().unwrap();
+            cpus.push((core,limit));
+        }
+    }
+    if cpus.len() > 0{
+        cpu_busy_accurate(cpus.clone());
+        print!("Now I'm eat {:} cpu", &cpus.len());
+    }else{
+        cpu_busy(args.cpu_num,args.limit);
+        print!("Now I'm eat {:} cpu", args.cpu_num);
+    }
+    println!(" and {:} MB Memory.", args.mem_size);
     let processing_handle = processing_display(args.log_path);
     unsafe{
         HANDLES.push(processing_handle);
     };
     unsafe{
-        for i in HANDLES.pop(){
-            i.join().unwrap();
+        while let Some(handle) = HANDLES.pop() {
+            let _ = handle.join().unwrap();
         }
     }
 }
