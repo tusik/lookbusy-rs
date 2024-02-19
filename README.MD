@@ -14,7 +14,10 @@
 
 This is a program can be set to eat you cpu and memory resource.
 
-You can controll how much cpu usage per single thread.
+# feature
+ - precise control cpu core usage 0,1;3,1;5,1 core0,3,5 use 100% cpu
+ - fake log print
+ - cpu usage per core
 
 ![screenshot](example/example.gif)
 # Install
@@ -28,8 +31,10 @@ USAGE:
 
 OPTIONS:
     -c, --cpu-num <CPU_NUM>      how many cpu thread you want use [default: 1]
+    -C, --config <CONFIG>        precise control cpu core usage 0,1;3,1;5,1 core0,3,5 use 100% cpu
     -h, --help                   Print help information
     -l, --limit <LIMIT>          cpu usage per thread % [default: 1]
+    -L, --log-path <LOG_PATH>    fake log print
     -m, --mem-size <MEM_SIZE>    how many MB you want use [default: 1024]
     -V, --version                Print version information
 ```
