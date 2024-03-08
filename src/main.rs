@@ -23,20 +23,20 @@ use rand::thread_rng;
 #[clap(author, version, about, long_about = None)]
 pub struct Args{
     /// how many cpu thread you want use.
-    #[clap(short, long, default_value_t=1)]
+    #[clap(short, long, env, default_value_t=1)]
     cpu_num: usize,
     /// cpu usage per thread %.
-    #[clap(short, long, default_value_t=1.0)]
+    #[clap(short, long, env, default_value_t=1.0)]
     limit: f32,
     /// how many MB you want use.
-    #[clap(short, long, default_value_t=1024)]
+    #[clap(short, long, env, default_value_t=1024)]
     mem_size: u64,
     /// fake log print.
-    #[clap(short='L', long)]
+    #[clap(short='L', long, env)]
     log_path: Option<String>,
     /// precise control cpu core usage
     /// 0/1,3/1,5/1 core0,3,5 use 100% cpu
-    #[clap(short='C', long)]
+    #[clap(short='C', long, env)]
     config: Option<String>
 }
 static mut HANDLES:Vec<JoinHandle<bool>> = vec![];
