@@ -50,6 +50,8 @@ where P: AsRef<Path>, {
 
 fn display_log(log_path:&str){
     loop {
+        print!("\x1b[2J");
+        print!("\x1b[H");
         if let Ok(lines) = read_lines(log_path) {
             let disr = SkewNormal::new(20.0, 300.0, 0.5).unwrap();
             let mut rng = thread_rng();
