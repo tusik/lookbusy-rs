@@ -18,9 +18,8 @@ use std::thread::{self, JoinHandle};
 use std::time::{Duration, SystemTime};
 use ctrlc;
 use clap::Parser;
-use rand_distr::{Distribution, Normal, SkewNormal};
 use sysinfo::{System, SystemExt};
-use rand::thread_rng;
+use rand::Rng;
 use crate::configure::CPU;
 
 #[derive(Parser, Debug)]
@@ -55,13 +54,11 @@ where P: AsRef<Path>, {
 fn display_log(log_path:&str){
     loop {
         if let Ok(lines) = read_lines(log_path) {
-            let dist = SkewNormal::new(20.0, 300.0, 0.5).unwrap();
-            let mut rng = thread_rng();
+            let mut rng = rand::thread_rng();
             for line in lines {
                 if let Ok(ip) = line {
-                    let num = dist.sample(&mut rng)as u64;
                     println!("{}", ip);
-                    thread::sleep(Duration::from_millis(num));
+                    thread::sleep(Duration::from_millis(rng.gen_range(2..200)));
                 }      
             }   
         }
@@ -90,18 +87,14 @@ fn cpu_busy_accurate(config:Vec<CPU>){
     for i in config{
         let core = core_ids[i.core_id as usize];
         let handle = thread::spawn(move || {
-            let dist = Normal::new(-i.jitter, i.jitter).unwrap();
             let mut rng = rand::thread_rng();
             let res = core_affinity::set_for_current(core);
-            println!("{}",res);
+            println!("Set core {} result: {}", i.core_id, res);
             loop{
                 let durations = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
-                let mut usage_limit_time = i.limit;
-                if i.jitter > 0.0 {
-                    usage_limit_time += dist.sample(&mut rng);
-                }
-                if durations.as_millis() % 1000 > (usage_limit_time * 1000.0) as u128 {
-                    thread::sleep(Duration::from_millis(10));
+                
+                if durations.as_millis() % 1000 > (i.limit * 1000.0) as u128 {
+                    thread::sleep(Duration::from_millis(20 + (i.jitter * rng.gen::<f32>() * 1000.0) as u64));
                 }
                 _ = 2 * 11;
             };

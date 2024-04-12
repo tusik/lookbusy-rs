@@ -12,5 +12,4 @@ clap = { version = "3.2.23", features = ["env", "derive"] }
 ctrlc = "3.2.3"
 sysinfo = "0.27.7"
 rand = "0.8.5"
-rand_distr = "0.4.3"
 core_affinity = "0.8.1"
