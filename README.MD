@@ -20,6 +20,17 @@ This is a program can be set to eat you cpu and memory resource.
  - cpu usage per core
 
 ![screenshot](example/example.gif)
+
+# Platform
+- Windows
+  - x86 & x64 [OK]
+- Linux
+    - x86 & x64 [OK]
+    - arm64 [OK]
+- MacOS
+  - x86 & x64 [OK]
+  - M serial [core control not work]
+
 # Install
 ```
 cargo install lookbusy
