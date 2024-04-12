@@ -20,6 +20,17 @@ This is a program can be set to eat you cpu and memory resource.
  - cpu usage per core
 
 ![screenshot](example/example.gif)
+
+# Platform
+- Windows
+  - x86 & x64 [OK]
+- Linux
+    - x86 & x64 [OK]
+    - arm64 [OK]
+- MacOS
+  - x86 & x64 [OK]
+  - M serial [core control not work]
+
 # Install
 ```
 cargo install lookbusy
@@ -38,6 +49,16 @@ OPTIONS:
     -m, --mem-size <MEM_SIZE>    how many MB you want use [default: 1024]
     -V, --version                Print version information
 
+```
+## Config details
+
+[Core index] / [Cpu Usage Limit] / [Cpu Jitter]
+
+Example:
+```
+0/0.5/0.5,4/1
+core 0, Cpu 50% and with 50% jitter, so 0%-50% in core0.
+core 4, Cpu 100%, 100% in core4.
 ```
 
 Just like `./lookbusy -c 2 -m 4096`

@@ -8,6 +8,8 @@
  * 
  * Copyright (c) 2022 by Image image@by.cx, All Rights Reserved. 
  */
+mod configure;
+
 use std::io::{self, BufRead, Write};
 use std::fs::File;
 use std::mem::size_of;
@@ -16,9 +18,10 @@ use std::thread::{self, JoinHandle};
 use std::time::{Duration, SystemTime};
 use ctrlc;
 use clap::Parser;
-use rand_distr::{Distribution,SkewNormal};
 use sysinfo::{System, SystemExt};
-use rand::thread_rng;
+use rand::Rng;
+use crate::configure::CPU;
+
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 pub struct Args{
@@ -53,13 +56,11 @@ fn display_log(log_path:&str){
         print!("\x1b[2J");
         print!("\x1b[H");
         if let Ok(lines) = read_lines(log_path) {
-            let disr = SkewNormal::new(20.0, 300.0, 0.5).unwrap();
-            let mut rng = thread_rng();
+            let mut rng = rand::thread_rng();
             for line in lines {
                 if let Ok(ip) = line {
-                    let num = disr.sample(&mut rng)as u64;
                     println!("{}", ip);
-                    thread::sleep(Duration::from_millis(num));
+                    thread::sleep(Duration::from_millis(rng.gen_range(2..200)));
                 }      
             }   
         }
@@ -83,20 +84,21 @@ fn cpu_busy(cpu_num:usize, limit:f32){
     }
 }
 
-fn cpu_busy_accurate(config:Vec<(u32,f32)>){
+fn cpu_busy_accurate(config:Vec<CPU>){
     let core_ids = core_affinity::get_core_ids().unwrap();
     for i in config{
-        let core = core_ids[i.0 as usize];
+        let core = core_ids[i.core_id as usize];
         let handle = thread::spawn(move || {
-            core_affinity::set_for_current(core);
+            let mut rng = rand::thread_rng();
+            let res = core_affinity::set_for_current(core);
+            println!("Set core {} result: {}", i.core_id, res);
             loop{
                 let durations = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
-                if durations.as_millis() % 1000 > (i.1 * 1000.0) as u128{
-                    thread::sleep(Duration::from_millis(10));
+                
+                if durations.as_millis() % 1000 > (i.limit * 1000.0) as u128 {
+                    thread::sleep(Duration::from_millis(20 + (i.jitter * rng.gen::<f32>() * 1000.0) as u64));
                 }
                 _ = 2 * 11;
-
-
             };
         });
         unsafe{
@@ -133,7 +135,7 @@ fn processing_display(log_path : Option<String>) -> JoinHandle<bool>{
                     match stick_itr.next() {
                         Some(chr) => {
                             print!("Running {} \r",chr);
-                            std::io::stdout().flush().expect("Error on message flush.");
+                            io::stdout().flush().expect("Error on message flush.");
                         },
                         None => {
                             stick_itr = STICK.iter();
@@ -163,19 +165,16 @@ fn main() {
     mem_busy(args.mem_size);
     let mut cpus = Vec::new();
     if args.config.is_some(){
-        let config = args.config.unwrap();
+        let config = args.config.expect("Error configure text format");
         let parts:Vec<&str> = config.split(",").collect();
         for part in parts{
-            let _part = part.trim();
-            let _part:Vec<&str> = _part.split("/").collect();
-            let core = _part[0].parse::<u32>().unwrap();
-            let limit = _part[1].parse::<f32>().unwrap();
-            cpus.push((core,limit));
+            let cpu_config = CPU::from_config(part);
+            cpus.push(cpu_config);
         }
     }
     if cpus.len() > 0{
-        cpu_busy_accurate(cpus.clone());
         print!("Now I'm eat {:} cpu", &cpus.len());
+        cpu_busy_accurate(cpus);
     }else{
         cpu_busy(args.cpu_num,args.limit);
         print!("Now I'm eat {:} cpu", args.cpu_num);
@@ -185,6 +184,23 @@ fn main() {
     unsafe{
         HANDLES.push(processing_handle);
     };
+    unsafe{
+        while let Some(handle) = HANDLES.pop() {
+            let _ = handle.join().unwrap();
+        }
+    }
+}
+#[test]
+pub fn test_cpu_busy(){
+    let config_str = "0/0.5,3/1";
+    let parts:Vec<&str> = config_str.split(",").collect();
+
+    let mut cpus = Vec::new();
+    for part in parts{
+        let cpu_config = CPU::from_config(part);
+        cpus.push(cpu_config);
+    }
+    cpu_busy_accurate(cpus);
     unsafe{
         while let Some(handle) = HANDLES.pop() {
             let _ = handle.join().unwrap();
