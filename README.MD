@@ -50,5 +50,15 @@ OPTIONS:
     -V, --version                Print version information
 
 ```
+## Config details
+
+[Core index] / [Cpu Usage Limit] / [Cpu Jitter]
+
+Example:
+```
+0/0.5/0.5,4/1
+core 0, Cpu 50% and with 50% jitter, so 0%-50% in core0.
+core 4, Cpu 100%, 100% in core4.
+```
 
 Just like `./lookbusy -c 2 -m 4096`
