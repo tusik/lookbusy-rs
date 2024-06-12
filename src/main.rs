@@ -119,7 +119,7 @@ fn main() {
                 return;
             }
         };
-        cpu_worker.stress_accurate(config.cpu);
+        cpu_worker.stress_accurate(config.cpu.unwrap());
     }else{
         cpu_worker.stress(args.cpu_num,args.limit);
     }

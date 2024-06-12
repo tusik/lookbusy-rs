@@ -17,16 +17,17 @@ impl CPUWorker{
     pub fn stress_accurate(self, config:Vec<CPU>){
         let core_ids = core_affinity::get_core_ids().unwrap();
         for i in config{
-            let core = core_ids[i.core_id as usize];
+            let core = core_ids[i.id as usize];
             let handle = thread::spawn(move || {
                 let mut rng = rand::thread_rng();
                 let res = core_affinity::set_for_current(core);
-                println!("Set core {} result: {}", i.core_id, res);
+                println!("Set core {} result: {}", i.id, res);
                 loop{
                     let durations = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
-
-                    if durations.as_millis() % 1000 > (i.limit * 1000.0) as u128 {
-                        thread::sleep(Duration::from_millis(20 + (i.jitter * rng.gen::<f32>() * 1000.0) as u64));
+                    let limit = i.limit.unwrap_or(1.0);
+                    let jitter = i.jitter.unwrap_or(0.0);
+                    if durations.as_millis() % 1000 > (limit * 1000.0) as u128 {
+                        thread::sleep(Duration::from_millis(20 + (jitter * rng.gen::<f32>() * 1000.0) as u64));
                     }
                     _ = 2 * 11;
                 };
