@@ -20,7 +20,7 @@ use ctrlc;
 use clap::Parser;
 use sysinfo::{System, SystemExt};
 use rand::Rng;
-use crate::configure::{Config};
+use crate::configure::{Config, Memory};
 use crate::worker::{CPUWorker, MemWorker};
 
 #[derive(Parser, Debug)]
@@ -121,13 +121,11 @@ fn main() {
             }
         };
         cpu_worker.stress_accurate(config.cpu.unwrap());
-        mem_worker.busy(config.memory.unwrap_or(1024));
-        println!(" and {:} MB Memory.", config.memory.unwrap_or(1024));
+        mem_worker.busy(config.memory.unwrap_or(Memory::new(1024)));
 
     }else{
         cpu_worker.stress(args.cpu_num,args.limit);
-        mem_worker.busy(args.mem_size);
-        println!(" and {:} MB Memory.", args.mem_size);
+        mem_worker.busy(Memory::new(args.mem_size));
     }
 
     let processing_handle = processing_display(args.log_path);

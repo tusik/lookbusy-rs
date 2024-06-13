@@ -2,7 +2,7 @@ use std::mem::size_of;
 use std::thread;
 use std::time::{Duration, SystemTime};
 use rand::Rng;
-use crate::configure::CPU;
+use crate::configure::{CPU, Memory};
 use crate::{EAT_MEM, HANDLES};
 
 pub struct CPUWorker{
@@ -63,16 +63,16 @@ impl MemWorker{
 
         }
     }
-    pub fn busy(self, size_mb:u64){
+    pub fn busy(self, mem:Memory){
         println!("Start eat memory!!!");
         let data_size = size_of::<u128>() as u64;
-        let target_size_bit = size_mb *1024 *1024 *8 / (data_size * 8);
+        let target_size_bit = mem.size *1024 *1024 *8 / (data_size * 8);
         let start_durations = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
         unsafe{
             EAT_MEM.resize(target_size_bit.try_into().unwrap(), 1);
         }
         let end_durations = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
         let diff = end_durations - start_durations;
-        println!("Eat memory takes {} ms.",diff.as_millis());
+        println!("Eat memory {} MB takes {} ms.",mem.size,diff.as_millis());
     }
 }

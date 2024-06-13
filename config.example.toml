@@ -1,4 +1,9 @@
 [[cpu]]
 id=1
 limit = 50
-[memory]
+[[cpu]]
+id=3
+limit = 100
+
+
+memory = 1024

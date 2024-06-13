@@ -4,7 +4,7 @@ use toml::de::Error;
 #[derive(Serialize,Deserialize)]
 pub struct Config{
     pub cpu: Option<Vec<CPU>>,
-    pub memory: Option<u64>,
+    pub memory: Option<Memory>,
 }
 impl Config{
     pub fn load(file:String) -> Result<Config, Error> {
@@ -22,4 +22,15 @@ pub struct CPU{
     pub time: Option<u64>
 }
 impl CPU{
+}
+#[derive(Serialize,Deserialize)]
+pub struct Memory{
+    pub size: u64
+}
+impl Memory{
+    pub fn new(size:u64) -> Memory{
+        Memory{
+            size
+        }
+    }
 }
