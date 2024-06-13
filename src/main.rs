@@ -111,6 +111,7 @@ fn main() {
     }
     println!("Initializing CPU/Mem worker");
     let cpu_worker = CPUWorker::new();
+    let mem_worker = MemWorker::new();
     if args.config.is_some(){
         let config = match Config::load(args.config.unwrap()){
             Ok(c) => {c}
@@ -120,13 +121,15 @@ fn main() {
             }
         };
         cpu_worker.stress_accurate(config.cpu.unwrap());
+        mem_worker.busy(config.memory.unwrap_or(1024));
+        println!(" and {:} MB Memory.", config.memory.unwrap_or(1024));
+
     }else{
         cpu_worker.stress(args.cpu_num,args.limit);
+        mem_worker.busy(args.mem_size);
+        println!(" and {:} MB Memory.", args.mem_size);
     }
-    let mem_worker = MemWorker::new();
-    mem_worker.busy(args.mem_size);
 
-    println!(" and {:} MB Memory.", args.mem_size);
     let processing_handle = processing_display(args.log_path);
     unsafe{
         HANDLES.push(processing_handle);
