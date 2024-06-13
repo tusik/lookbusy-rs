@@ -36,6 +36,41 @@ This is a program can be set to eat you cpu and memory resource.
 cargo install lookbusy
 ```
 # How to use
+## 0.3 config file
+```shell
+lookbusy 0.3.0
+You are busy.
+
+USAGE:
+    lookbusy [OPTIONS]
+
+OPTIONS:
+    -c, --cpu-num <CPU_NUM>      how many cpu thread you want use [env: CPU_NUM=] [default: 1]
+    -C, --config <CONFIG>        precise control cpu core by config file -C config.toml [env:
+                                 CONFIG=]
+    -h, --help                   Print help information
+    -l, --limit <LIMIT>          cpu usage per thread % [env: LIMIT=] [default: 1]
+    -L, --log-path <LOG_PATH>    fake log print [env: LOG_PATH=]
+    -m, --mem-size <MEM_SIZE>    how many MB you want use [env: MEM_SIZE=] [default: 1024]
+    -V, --version                Print version information
+
+```
+you can use command to quick start
+
+```shell
+./lookbusy -c 2 -m 4096
+```
+
+or use config file to control cpu core usage precisely
+
+```shell
+./lookbusy -C config.toml
+```
+
+toml example see [config.example.toml](config.example.toml)
+
+## 0.2
+
 ```shell
 USAGE:
     lookbusy [OPTIONS]

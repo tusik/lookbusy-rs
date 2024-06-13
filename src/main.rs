@@ -9,18 +9,19 @@
  * Copyright (c) 2022 by Image image@by.cx, All Rights Reserved. 
  */
 mod configure;
+mod worker;
 
 use std::io::{self, BufRead, Write};
 use std::fs::File;
-use std::mem::size_of;
 use std::path::Path;
 use std::thread::{self, JoinHandle};
-use std::time::{Duration, SystemTime};
+use std::time::{Duration};
 use ctrlc;
 use clap::Parser;
 use sysinfo::{System, SystemExt};
 use rand::Rng;
-use crate::configure::CPU;
+use crate::configure::{Config, Memory};
+use crate::worker::{CPUWorker, MemWorker};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -37,8 +38,8 @@ pub struct Args{
     /// fake log print.
     #[clap(short='L', long, env)]
     log_path: Option<String>,
-    /// precise control cpu core usage
-    /// 0/1,3/1,5/1 core0,3,5 use 100% cpu
+    /// precise control cpu core by config file
+    /// -C config.toml
     #[clap(short='C', long, env)]
     config: Option<String>
 }
@@ -65,59 +66,6 @@ fn display_log(log_path:&str){
             }   
         }
     }
-}
-fn cpu_busy(cpu_num:usize, limit:f32){
-    for _i in 0..cpu_num{
-        let handle = thread::spawn(move || {
-            loop{
-                let durations = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
-                if durations.as_millis() % 1000 > (limit * 1000.0) as u128{
-                    thread::sleep(Duration::from_millis(10));
-                }
-                let _answer = 2 * 21;
-
-            };
-        });
-        unsafe{
-            HANDLES.push(handle);
-        };
-    }
-}
-
-fn cpu_busy_accurate(config:Vec<CPU>){
-    let core_ids = core_affinity::get_core_ids().unwrap();
-    for i in config{
-        let core = core_ids[i.core_id as usize];
-        let handle = thread::spawn(move || {
-            let mut rng = rand::thread_rng();
-            let res = core_affinity::set_for_current(core);
-            println!("Set core {} result: {}", i.core_id, res);
-            loop{
-                let durations = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
-                
-                if durations.as_millis() % 1000 > (i.limit * 1000.0) as u128 {
-                    thread::sleep(Duration::from_millis(20 + (i.jitter * rng.gen::<f32>() * 1000.0) as u64));
-                }
-                _ = 2 * 11;
-            };
-        });
-        unsafe{
-            HANDLES.push(handle);
-        };
-    }
-}
-
-fn mem_busy(size_mb:u64){
-    println!("Start eat memory!!!");
-    let data_size = size_of::<u128>() as u64;
-    let target_size_bit = size_mb *1024 *1024 *8 / (data_size * 8);
-    let start_durations = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
-    unsafe{
-        EAT_MEM.resize(target_size_bit.try_into().unwrap(), 1);
-    }
-    let end_durations = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
-    let diff = end_durations - start_durations;
-    println!("Eat memory takes {} ms.",diff.as_millis());
 }
 
 fn print_info(){
@@ -162,45 +110,28 @@ fn main() {
         println!("\nWarning! Free memory is less than require. It could cause system performance issue. ");
     }
     println!("Initializing CPU/Mem worker");
-    mem_busy(args.mem_size);
-    let mut cpus = Vec::new();
+    let cpu_worker = CPUWorker::new();
+    let mem_worker = MemWorker::new();
     if args.config.is_some(){
-        let config = args.config.expect("Error configure text format");
-        let parts:Vec<&str> = config.split(",").collect();
-        for part in parts{
-            let cpu_config = CPU::from_config(part);
-            cpus.push(cpu_config);
-        }
-    }
-    if cpus.len() > 0{
-        print!("Now I'm eat {:} cpu", &cpus.len());
-        cpu_busy_accurate(cpus);
+        let config = match Config::load(args.config.unwrap()){
+            Ok(c) => {c}
+            Err(e) => {
+                eprintln!("{}", e);
+                return;
+            }
+        };
+        cpu_worker.stress_accurate(config.cpu.unwrap());
+        mem_worker.busy(config.memory.unwrap_or(Memory::new(1024)));
+
     }else{
-        cpu_busy(args.cpu_num,args.limit);
-        print!("Now I'm eat {:} cpu", args.cpu_num);
+        cpu_worker.stress(args.cpu_num,args.limit);
+        mem_worker.busy(Memory::new(args.mem_size));
     }
-    println!(" and {:} MB Memory.", args.mem_size);
+
     let processing_handle = processing_display(args.log_path);
     unsafe{
         HANDLES.push(processing_handle);
     };
-    unsafe{
-        while let Some(handle) = HANDLES.pop() {
-            let _ = handle.join().unwrap();
-        }
-    }
-}
-#[test]
-pub fn test_cpu_busy(){
-    let config_str = "0/0.5,3/1";
-    let parts:Vec<&str> = config_str.split(",").collect();
-
-    let mut cpus = Vec::new();
-    for part in parts{
-        let cpu_config = CPU::from_config(part);
-        cpus.push(cpu_config);
-    }
-    cpu_busy_accurate(cpus);
     unsafe{
         while let Some(handle) = HANDLES.pop() {
             let _ = handle.join().unwrap();
